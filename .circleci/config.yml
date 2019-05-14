@@ -44,7 +44,7 @@ jobs:
           name: Show list of system-images
           command: sdkmanager --list --verbose | grep system-images
 
-	  - run:
+      - run:
           name: Setup Emulator
           command: sdkmanager "system-images;android-24;default;armeabi-v7a" && echo "no" | avdmanager create avd -n test -k "system-images;android-24;default;armeabi-v7a"
 
