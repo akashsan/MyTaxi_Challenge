@@ -1,58 +1,31 @@
 version: 2
 jobs:
   build:
-    branches:
-      only:
-        - master
-        - develop
+    working_directory: ~/code
     docker:
-      # specify the version you desire here
+      # Android the primary container
       - image: circleci/android:api-28
-
     environment:
-      # Customize the JVM maximum heap limit
       JVM_OPTS: -Xmx3200m
-      TERM: dumb
-
     steps:
       - checkout
-
-      # Download and cache dependencies
       - restore_cache:
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "chatmessageview/build.gradle" }}
-
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
       - run:
-          name: update android sdk
-          command: |
-              echo y | android update sdk --no-ui --all --filter tool,extra-android-m2repository,extra-google-google_play_services,extra-google-m2repository,android-26
-              echo y | android update sdk --no-ui --all --filter build-tools-26.0.0
-      - run:
-          name: gradle dependencies
+          name: Download Dependencies
           command: ./gradlew androidDependencies
-
       - save_cache:
-          paths: ~/.gradle
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "chatmessageview/build.gradle" }}
-
-      # run unit tests!
+          paths:
+            - ~/.gradle
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+      
       - run:
-          name: unit test
-          command: |
-              ./gradlew test
-              ./gradlew lint test
+          name: Setup emulator
+          command: sdkmanager "system-images;android-16;default;armeabi-v7a" && echo "no" | avdmanager create avd -n test -k "system-images;android-16;default;armeabi-v7a"
       - run:
-          name: Show list of system-images
-          command: sdkmanager --list --verbose | grep system-images
-
-      - run:
-          name: Setup Emulator
-          command: sdkmanager "system-images;android-24;default;armeabi-v7a" && echo "no" | avdmanager create avd -n test -k "system-images;android-24;default;armeabi-v7a"
-
-      - run:
-          name: Launch Emulator
-          command: export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib && emulator64-arm -avd test -noaudio -no-boot-anim -no-window -accel on
+          name: Launch emulator
+          command: export LD_LIBRARY_PATH=${ANDROID_HOME}/emulator/lib64:${ANDROID_HOME}/emulator/lib64/qt/lib && emulator64-arm -avd test -noaudio -no-boot-anim -no-window -accel auto -verbose
           background: true
-          
       - run:
           name: Wait emulator
           command: |
@@ -69,5 +42,3 @@ jobs:
           destination: reports
       - store_test_results:
           path: app/build/test-results
-
-     
